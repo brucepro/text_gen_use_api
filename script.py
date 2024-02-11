@@ -1,10 +1,6 @@
 """
-An example of extension. It does nothing, but you can add transformations
-before the return statements to customize the webui behavior.
-
-Starting from history_modifier and ending in output_modifier, the
-functions are declared in the same order that they are called at
-generation time.
+Text Gen Use API
+Bypasses the generate reply and uses an external api. 
 """
 
 import gradio as gr
@@ -32,7 +28,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 params = {
-    "display_name": "Example Extension",
+    "display_name": "Use External API",
     "is_tab": False,
     "api_reply": "",
     "logit_bias": None,
