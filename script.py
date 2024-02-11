@@ -1,7 +1,10 @@
 """
-Text Gen Use API
-Bypasses the generate reply and uses an external api. 
+An example of extension. It does nothing, but you can add transformations
+before the return statements to customize the webui behavior.
 
+Starting from history_modifier and ending in output_modifier, the
+functions are declared in the same order that they are called at
+generation time.
 """
 
 import gradio as gr
@@ -29,24 +32,60 @@ from dotenv import load_dotenv
 load_dotenv()
 
 params = {
-    "display_name": "Use External API",
+    "display_name": "Example Extension",
     "is_tab": False,
     "api_reply": "",
+    "logit_bias": None,
+    "logprobs": False,
+    "top_logprobs": None,
+    "n": 1,
+    "presence_penalty": 0,
+    "response_format": None,
+    "tools": None,
+    "tool_choice": None
+
+
+
+
+
+
 }
 
 def gen_from_api(string,model,state,type):
-    print(os.environ["OPENAI_API_KEY"])
-    print(state)
+    
     if type == "OpenAI":
+        if state["seed"] == -1:
+            seed = None
+        else:
+            seed = state["seed"]
         response = requests.post("https://api.openai.com/v1/chat/completions",
             headers={
             "Content-Type": "application/json",
             "Authorization": "Bearer " + os.environ["OPENAI_API_KEY"]},
             json={"model": model,
+            "frequency_penalty": state["frequency_penalty"],
+            "logit_bias": params["logit_bias"],
+            "logprobs": params["logprobs"],
+            "top_logprobs": params["top_logprobs"],
+            "max_tokens": state["max_new_tokens"],
+            "n": params["n"],
+            "presence_penalty": params["presence_penalty"],
+            "response_format": params["response_format"],
+            "seed": seed,
+            "stop": state["custom_stopping_strings"],
+            "stream": False,
+            "temperature": state["temperature"],
+            "top_p": state["top_p"],
+            "tools": params["tools"],
+            "tool_choice": params["tool_choice"],
+            "user": state["name1"],
+
             "messages": [
-            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "system", "content": state["context"]},
             {"role": "user", "content": string}]})
+        
         response_data = json.loads(response.content)
+        
         params['api_reply'] = response_data["choices"][0]["message"]["content"]
         return 
     if type == "Anthropic":
@@ -142,7 +181,7 @@ def output_modifier(string, state, is_chat=False):
     In chat mode, the modified version goes into history['visible'],
     and the original version goes into history['internal'].
     """
-    #print(string)
+    print(string)
     string = params['api_reply']
     return string
 
