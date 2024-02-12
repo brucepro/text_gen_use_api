@@ -33,6 +33,7 @@ params = {
     "api_reply": "",
     "api_type": "OpenAI",
     "custom_api_url_textbox": "http://127.0.0.1:8081",
+    "api_model": "gpt-3.5-turbo",
     "logit_bias": None,
     "logprobs": False,
     "top_logprobs": None,
@@ -52,7 +53,7 @@ params = {
 def gen_from_api(string,model,state,type):
     prompt = string
     system = str(state["context"]) + str(state["history"]["visible"])
-    #print(system)
+    
     if type == "OpenAI":
         if state["seed"] == -1:
             seed = None
@@ -205,7 +206,9 @@ def input_modifier(string, state, is_chat=False):
     In chat mode, it is the same as chat_input_modifier but only applied
     to "text", here called "string", and not to "visible_text".
     """
-    gen_from_api(string,"gpt-3.5-turbo",state,params["api_type"])
+    shared.processing_message = "Connecting to external API" + str(params['api_type']) + "..."
+    model = params["api_model"]
+    gen_from_api(string,model,state,params["api_type"])
     
     return string
 
@@ -217,8 +220,9 @@ def output_modifier(string, state, is_chat=False):
     In chat mode, the modified version goes into history['visible'],
     and the original version goes into history['internal'].
     """
-    print(string)
+    
     string = params['api_reply']
+    params['api_reply'] = ""
     return string
 
 
@@ -252,6 +256,8 @@ def ui():
                 )
                 api_type_button.change(lambda x: params.update({'api_type': x}), api_type_button, None)
             with gr.Row():
-                custom_api_url_textbox = gr.Textbox(show_label=False, value=params['custom_api_url_textbox'], elem_id="ego_persona_name_textbox")
+                api_model_textbox = gr.Textbox(show_label=True, label="Model:", value=params['api_model'], elem_id="api_model_textbox")
+                api_model_textbox.change(lambda x: params.update({'api_model': x}), api_model_textbox, None)
+                custom_api_url_textbox = gr.Textbox(show_label=True, label="Custom API url:", value=params['custom_api_url_textbox'], elem_id="api_customurl_textbox")
                 custom_api_url_textbox.change(lambda x: params.update({'custom_api_url_textbox': x}), custom_api_url_textbox, None)
     pass
