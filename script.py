@@ -52,7 +52,7 @@ params = {
 def gen_from_api(string,model,state,type):
     prompt = string
     system = str(state["context"]) + str(state["history"]["visible"])
-    print(system)
+    #print(system)
     if type == "OpenAI":
         if state["seed"] == -1:
             seed = None
