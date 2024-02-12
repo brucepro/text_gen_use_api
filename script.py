@@ -23,7 +23,7 @@ import random
 from requests.auth import HTTPBasicAuth
 import base64
 from openai import OpenAI
-
+import textwrap
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -31,6 +31,8 @@ params = {
     "display_name": "Use External API",
     "is_tab": False,
     "api_reply": "",
+    "api_type": "OpenAI",
+    "custom_api_url_textbox": "http://127.0.0.1:8081",
     "logit_bias": None,
     "logprobs": False,
     "top_logprobs": None,
@@ -48,7 +50,9 @@ params = {
 }
 
 def gen_from_api(string,model,state,type):
-    
+    prompt = string
+    system = str(state["context"]) + str(state["history"]["visible"])
+    print(system)
     if type == "OpenAI":
         if state["seed"] == -1:
             seed = None
@@ -77,8 +81,8 @@ def gen_from_api(string,model,state,type):
             "user": state["name1"],
 
             "messages": [
-            {"role": "system", "content": state["context"]},
-            {"role": "user", "content": string}]})
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt}]})
         
         response_data = json.loads(response.content)
         
@@ -153,7 +157,43 @@ def gen_from_api(string,model,state,type):
 )
         return str(response.content)
     if type == "Custom":
-        return str(response.content)
+        
+        if state["seed"] == -1:
+            seed = None
+        else:
+            seed = state["seed"]
+        response = requests.post(params['custom_api_url_textbox'] + "/v1/chat/completions",
+            headers={
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + os.environ["CUSTOM_API_KEY"]},
+            json={"model": model,
+            "frequency_penalty": state["frequency_penalty"],
+            "logit_bias": params["logit_bias"],
+            "logprobs": params["logprobs"],
+            "top_logprobs": params["top_logprobs"],
+            "max_tokens": state["max_new_tokens"],
+            "n": params["n"],
+            "presence_penalty": params["presence_penalty"],
+            "response_format": params["response_format"],
+            "seed": seed,
+            "stop": state["custom_stopping_strings"],
+            "stream": False,
+            "temperature": state["temperature"],
+            "top_p": state["top_p"],
+            "tools": params["tools"],
+            "tool_choice": params["tool_choice"],
+            "user": state["name1"],
+
+            "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt}]})
+        
+        response_data = json.loads(response.content)
+        
+        params['api_reply'] = response_data["choices"][0]["message"]["content"]
+        return 
+        
+        
     pass
 
 
@@ -165,7 +205,7 @@ def input_modifier(string, state, is_chat=False):
     In chat mode, it is the same as chat_input_modifier but only applied
     to "text", here called "string", and not to "visible_text".
     """
-    gen_from_api(string,"gpt-3.5-turbo",state,"OpenAI")
+    gen_from_api(string,"gpt-3.5-turbo",state,params["api_type"])
     
     return string
 
@@ -196,4 +236,22 @@ def ui():
     To learn about gradio components, check out the docs:
     https://gradio.app/docs/
     """
+
+    with gr.Accordion("Memoir+ v.001"):
+        with gr.Row():
+            gr.Markdown(textwrap.dedent("""
+        - If you find this extension useful, <a href="https://www.buymeacoffee.com/brucepro">Buy Me a Coffee:Brucepro</a> or <a href="https://ko-fi.com/brucepro">Support me on Ko-fi</a>
+        - For feedback or support, please raise an issue on https://github.com/brucepro/text_gen_use_api
+        """))
+        with gr.Accordion("Settings"):  
+            with gr.Row():
+                api_type_button = gr.Radio(
+                    choices={"OpenAI": "OpenAI","Anthropic": "Anthropic","Cohere": "Cohere","Mistral": "Mistral","Google": "Google", "Custom (OpenAI compatible)": "Custom"},
+                    label="Choose the type of api:",
+                    value=params['api_type'],
+                )
+                api_type_button.change(lambda x: params.update({'api_type': x}), api_type_button, None)
+            with gr.Row():
+                custom_api_url_textbox = gr.Textbox(show_label=False, value=params['custom_api_url_textbox'], elem_id="ego_persona_name_textbox")
+                custom_api_url_textbox.change(lambda x: params.update({'custom_api_url_textbox': x}), custom_api_url_textbox, None)
     pass
