@@ -4,8 +4,6 @@ Bypasses the generate reply and uses an external api.
 """
 
 import gradio as gr
-import torch
-from transformers import LogitsProcessor
 
 from modules import chat, shared
 from modules.text_generation import (
@@ -22,7 +20,6 @@ from datetime import datetime
 import random
 from requests.auth import HTTPBasicAuth
 import base64
-from openai import OpenAI
 import textwrap
 from dotenv import load_dotenv
 load_dotenv()
@@ -42,11 +39,6 @@ params = {
     "response_format": None,
     "tools": None,
     "tool_choice": None
-
-
-
-
-
 
 }
 
